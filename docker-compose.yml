@@ -1,0 +1,68 @@
+services:
+  api:
+    build: .
+    image: tarea2-mlops:latest
+    container_name: tarea2-api
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    environment:
+      MLFLOW_TRACKING_URI: sqlite:////app/mlflow/mlflow.db
+      MLFLOW_ARTIFACT_ROOT: /app/mlartifacts
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./mlartifacts:/app/mlartifacts
+      - ./mlflow:/app/mlflow
+      - ./models:/app/models
+      - ./reports/generated:/app/reports/generated
+
+  mlflow:
+    image: tarea2-mlops:latest
+    container_name: tarea2-mlflow
+    build: .
+    command: >
+      mlflow server
+      --backend-store-uri sqlite:////app/mlflow/mlflow.db
+      --default-artifact-root /app/mlartifacts
+      --host 0.0.0.0
+      --port 5000
+    environment:
+      MLFLOW_TRACKING_URI: sqlite:////app/mlflow/mlflow.db
+      MLFLOW_ARTIFACT_ROOT: /app/mlartifacts
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./mlartifacts:/app/mlartifacts
+      - ./mlflow:/app/mlflow
+
+  pipeline:
+    image: tarea2-mlops:latest
+    build: .
+    profiles:
+      - jobs
+    command: python -m tarea2.cli run-all
+    environment:
+      MLFLOW_TRACKING_URI: sqlite:////app/mlflow/mlflow.db
+      MLFLOW_ARTIFACT_ROOT: /app/mlartifacts
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./mlartifacts:/app/mlartifacts
+      - ./mlflow:/app/mlflow
+      - ./models:/app/models
+      - ./reports/generated:/app/reports/generated
+
+  monitor:
+    image: tarea2-mlops:latest
+    build: .
+    profiles:
+      - jobs
+    command: python -m tarea2.cli monitor --input logs/predictions.csv
+    environment:
+      MLFLOW_TRACKING_URI: sqlite:////app/mlflow/mlflow.db
+      MLFLOW_ARTIFACT_ROOT: /app/mlartifacts
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./reports/generated:/app/reports/generated
