@@ -1,10 +1,14 @@
 # Tarea 2 - Pipeline ML End-to-End
 
-Este repositorio implementa un pipeline de Machine Learning end-to-end con enfoque MLOps para predecir diagnósticos de cáncer de mama a partir de variables clínicas del dataset `breast_cancer` de `scikit-learn`.
+Este repositorio implementa un pipeline de Machine Learning end-to-end con enfoque MLOps para clasificar tumores de mama como benignos o malignos a partir de variables clinicas del dataset `breast_cancer` de `scikit-learn`.
+
+La idea de la entrega no es solo entrenar un modelo, sino mostrar como un modelo puede pasar de un experimento aislado a un flujo trazable, reproducible, versionado, desplegable y monitoreable.
 
 ## Objetivo del caso
 
-El objetivo de negocio es apoyar a una organización del sector salud con una herramienta analítica que ayude a priorizar casos con alta probabilidad de malignidad, reduciendo tiempos de atención y mejorando la trazabilidad de modelos en producción.
+El caso se plantea para una red de clinicas o laboratorios que recibe estudios de pacientes y necesita priorizar los casos con mayor probabilidad de malignidad para acelerar la revision medica.
+
+El modelo no reemplaza el diagnostico clinico. Su valor esta en apoyar el triage, ordenar prioridades y dejar trazabilidad sobre como se genero cada version del modelo.
 
 ## Componentes implementados
 
@@ -16,6 +20,14 @@ El objetivo de negocio es apoyar a una organización del sector salud con una he
 - API de inferencia con FastAPI
 - Monitoreo básico de drift y performance
 - Contenedores Docker para reproducibilidad y despliegue local
+
+## Decisiones de diseno
+
+- Se uso el dataset `breast_cancer` incluido en `scikit-learn` porque permite que cualquier evaluador ejecute el pipeline sin descargar datos externos.
+- Se eligio `LogisticRegression` como modelo base porque es simple, interpretable y suficiente para demostrar el flujo MLOps completo.
+- Se uso MLflow local para registrar experimentos, metricas, artefactos y versiones del modelo sin depender de servicios cloud.
+- Se definio el alias `champion` para simular el modelo promovido a produccion.
+- Se agrego Docker Compose para ejecutar pipeline, API, MLflow y monitoreo en un entorno reproducible.
 
 ## Estructura
 
@@ -134,6 +146,36 @@ El pipeline guarda un dataset de referencia del entrenamiento y la API registra 
 
 - Drift de datos por variable usando la prueba KS
 - Accuracy, precision, recall y F1 si se cuenta con columna `target`
+
+## Validacion realizada
+
+Durante la prueba del proyecto se valido:
+
+- Construccion correcta de la imagen Docker.
+- Ejecucion del pipeline completo dentro del contenedor.
+- Registro del modelo `BreastCancerClassifier` en MLflow.
+- Asignacion del alias `champion` al modelo registrado.
+- Levantamiento de la API en `http://localhost:8000`.
+- Levantamiento de MLflow en `http://localhost:5001`.
+- Prueba real del endpoint `/predict`.
+- Generacion del reporte de monitoreo en `reports/generated/monitoring_report.json`.
+
+Metricas obtenidas en la ejecucion validada:
+
+| Metrica | Valor |
+| --- | ---: |
+| Accuracy | 0.9825 |
+| Precision | 0.9861 |
+| Recall | 0.9861 |
+| F1-score | 0.9861 |
+| ROC AUC | 0.9954 |
+
+## Limitaciones
+
+- El dataset es academico, limpio y pequeno; por eso las metricas pueden ser mas altas que en un caso productivo real.
+- El monitoreo de drift queda implementado, pero sus conclusiones requieren batches de prediccion mas grandes.
+- El modelo debe entenderse como apoyo a priorizacion, no como sustituto de una decision medica.
+- En un despliegue real faltarian controles adicionales como autenticacion, CI/CD, monitoreo continuo y validacion con datos recientes.
 
 ## Informe tecnico
 
